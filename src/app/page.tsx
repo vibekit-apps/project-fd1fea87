@@ -53,11 +53,30 @@ const februaryData = [
   { day: 9, february: 5 },
 ]
 
+// Calculate cumulative sums
+const januaryCumulative = januaryData.reduce((acc, curr, index) => {
+  const previousSum = index > 0 ? acc[index - 1].january : 0
+  acc.push({
+    day: curr.day,
+    january: previousSum + curr.january
+  })
+  return acc
+}, [] as Array<{ day: number; january: number }>)
+
+const februaryCumulative = februaryData.reduce((acc, curr, index) => {
+  const previousSum = index > 0 ? acc[index - 1].february : 0
+  acc.push({
+    day: curr.day,
+    february: previousSum + curr.february
+  })
+  return acc
+}, [] as Array<{ day: number; february: number }>)
+
 // Combine data for the chart, filling in null values for future February days
 const combinedData = Array.from({ length: 31 }, (_, i) => {
   const day = i + 1
-  const januaryEntry = januaryData.find(d => d.day === day)
-  const februaryEntry = februaryData.find(d => d.day === day)
+  const januaryEntry = januaryCumulative.find(d => d.day === day)
+  const februaryEntry = februaryCumulative.find(d => d.day === day)
   
   return {
     day,
@@ -68,14 +87,14 @@ const combinedData = Array.from({ length: 31 }, (_, i) => {
 
 // Calculate statistics
 const januaryStats = {
-  total: januaryData.reduce((sum, d) => sum + d.january, 0),
-  average: (januaryData.reduce((sum, d) => sum + d.january, 0) / 31).toFixed(1),
+  total: januaryCumulative[30].january, // Final cumulative value
+  average: (januaryCumulative[30].january / 31).toFixed(1),
   max: Math.max(...januaryData.map(d => d.january)),
 }
 
 const februaryStats = {
-  total: februaryData.reduce((sum, d) => sum + d.february, 0),
-  average: (februaryData.reduce((sum, d) => sum + d.february, 0) / 9).toFixed(1),
+  total: februaryCumulative[8].february, // Final cumulative value
+  average: (februaryCumulative[8].february / 9).toFixed(1),
   max: Math.max(...februaryData.map(d => d.february)),
 }
 
@@ -105,10 +124,10 @@ export default function DrinkingTracker() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              Daily Drinking Comparison
+              Cumulative Drinking Comparison
             </CardTitle>
             <CardDescription>
-              Daily drink count comparison between January 2026 (complete) and February 2026 (in progress)
+              Cumulative drink count comparison between January 2026 (complete) and February 2026 (in progress)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -142,7 +161,7 @@ export default function DrinkingTracker() {
                     }}
                     labelFormatter={(value) => `Day ${value}`}
                     formatter={(value, name) => [
-                      value === null ? 'No data' : `${value} drinks`,
+                      value === null ? 'No data' : `${value} drinks (total)`,
                       name === 'january' ? 'January 2026' : 'February 2026'
                     ]}
                   />
