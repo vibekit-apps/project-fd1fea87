@@ -1,9 +1,7 @@
 'use client'
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { BarChart3, Calendar, TrendingUp } from 'lucide-react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { useState, useEffect } from 'react'
 
 // Mock data for January 2026 (complete month)
 const januaryData = [
@@ -53,6 +51,40 @@ const februaryData = [
   { day: 9, february: 5 },
 ]
 
+// Generate full year data for heatmap
+const generateYearData = () => {
+  const yearData = []
+  const months = [
+    { name: 'Jan', days: 31, data: januaryData },
+    { name: 'Feb', days: 28, data: februaryData },
+    { name: 'Mar', days: 31, data: [] },
+    { name: 'Apr', days: 30, data: [] },
+    { name: 'May', days: 31, data: [] },
+    { name: 'Jun', days: 30, data: [] },
+    { name: 'Jul', days: 31, data: [] },
+    { name: 'Aug', days: 31, data: [] },
+    { name: 'Sep', days: 30, data: [] },
+    { name: 'Oct', days: 31, data: [] },
+    { name: 'Nov', days: 30, data: [] },
+    { name: 'Dec', days: 31, data: [] }
+  ]
+
+  months.forEach((month, monthIndex) => {
+    for (let day = 1; day <= month.days; day++) {
+      const dataPoint = month.data.find(d => d.day === day)
+      const value = dataPoint ? (monthIndex === 0 ? dataPoint.january : dataPoint.february) : 0
+      yearData.push({
+        date: `2026-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+        value,
+        month: monthIndex,
+        day
+      })
+    }
+  })
+
+  return yearData
+}
+
 // Calculate cumulative sums
 const januaryCumulative = januaryData.reduce((acc, curr, index) => {
   const previousSum = index > 0 ? acc[index - 1].january : 0
@@ -72,7 +104,7 @@ const februaryCumulative = februaryData.reduce((acc, curr, index) => {
   return acc
 }, [] as Array<{ day: number; february: number }>)
 
-// Combine data for the chart, filling in null values for future February days
+// Combine data for the chart
 const combinedData = Array.from({ length: 31 }, (_, i) => {
   const day = i + 1
   const januaryEntry = januaryCumulative.find(d => d.day === day)
@@ -85,183 +117,180 @@ const combinedData = Array.from({ length: 31 }, (_, i) => {
   }
 })
 
-// Calculate statistics
-const januaryStats = {
-  total: januaryCumulative[30].january, // Final cumulative value
-  average: (januaryCumulative[30].january / 31).toFixed(1),
-  max: Math.max(...januaryData.map(d => d.january)),
-}
+const HeatmapGrid = () => {
+  const yearData = generateYearData()
+  const maxValue = Math.max(...yearData.map(d => d.value))
+  
+  const getColor = (value: number) => {
+    if (value === 0) return '#ebedf0'
+    const intensity = value / maxValue
+    if (intensity <= 0.25) return '#9be9a8'
+    if (intensity <= 0.5) return '#40c463'
+    if (intensity <= 0.75) return '#30a14e'
+    return '#216e39'
+  }
 
-const februaryStats = {
-  total: februaryCumulative[8].february, // Final cumulative value
-  average: (februaryCumulative[8].february / 9).toFixed(1),
-  max: Math.max(...februaryData.map(d => d.february)),
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  // Create a grid starting from Sunday of the first week that contains Jan 1
+  const firstDate = new Date('2026-01-01')
+  const startOfGrid = new Date(firstDate)
+  startOfGrid.setDate(firstDate.getDate() - firstDate.getDay())
+
+  const weeks = []
+  let currentDate = new Date(startOfGrid)
+  
+  while (currentDate.getFullYear() === 2026 || weeks.length < 53) {
+    const week = []
+    for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
+      const dateStr = currentDate.toISOString().split('T')[0]
+      const dataPoint = yearData.find(d => d.date === dateStr)
+      
+      week.push({
+        date: dateStr,
+        value: dataPoint?.value || 0,
+        isCurrentYear: currentDate.getFullYear() === 2026
+      })
+      
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+    weeks.push(week)
+    
+    if (currentDate.getFullYear() > 2026) break
+  }
+
+  return (
+    <div className="w-full max-w-4xl mx-auto">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">2026 Drinking Activity</h3>
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <span>Less</span>
+          <div className="flex gap-1">
+            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#ebedf0' }}></div>
+            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#9be9a8' }}></div>
+            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#40c463' }}></div>
+            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#30a14e' }}></div>
+            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#216e39' }}></div>
+          </div>
+          <span>More</span>
+        </div>
+      </div>
+      
+      <div className="flex">
+        <div className="flex flex-col justify-between pr-2 text-xs text-gray-600 h-[104px]">
+          {['Mon', 'Wed', 'Fri'].map((day, i) => (
+            <div key={day} style={{ transform: `translateY(${i * 12}px)` }}>{day}</div>
+          ))}
+        </div>
+        
+        <div className="flex-1">
+          <div className="flex justify-between text-xs text-gray-600 mb-2">
+            {months.map(month => (
+              <div key={month}>{month}</div>
+            ))}
+          </div>
+          
+          <div className="flex gap-[1px]">
+            {weeks.map((week, weekIndex) => (
+              <div key={weekIndex} className="flex flex-col gap-[1px]">
+                {week.map((day, dayIndex) => (
+                  <div
+                    key={`${weekIndex}-${dayIndex}`}
+                    className="w-[11px] h-[11px] rounded-sm cursor-pointer hover:ring-1 hover:ring-gray-400"
+                    style={{ 
+                      backgroundColor: day.isCurrentYear ? getColor(day.value) : '#ebedf0',
+                      opacity: day.isCurrentYear ? 1 : 0.3
+                    }}
+                    title={`${day.date}: ${day.value} drinks`}
+                  ></div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function DrinkingTracker() {
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-white p-8">
+      <div className="max-w-6xl mx-auto space-y-12">
         {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-3">
-            <BarChart3 className="h-8 w-8 text-teal-500" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">
-              Molt - Drinking Tracker
-            </h1>
-          </div>
-          <p className="text-muted-foreground text-lg">
-            Comparing your drinking habits: January vs February 2026
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Drinking Tracker
+          </h1>
+          <p className="text-gray-600">
+            January vs February 2026
           </p>
-          <div className="flex items-center justify-center gap-2">
-            <Calendar className="h-4 w-4" />
-            <span className="text-sm text-muted-foreground">Today: February 9, 2026</span>
+        </div>
+
+        {/* Chart */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={combinedData}
+                margin={{
+                  top: 20,
+                  right: 30,
+                  left: 20,
+                  bottom: 20,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="day" 
+                  stroke="#666"
+                  tick={{ fontSize: 12 }}
+                  axisLine={{ stroke: '#ddd' }}
+                />
+                <YAxis 
+                  stroke="#666"
+                  tick={{ fontSize: 12 }}
+                  axisLine={{ stroke: '#ddd' }}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                  labelFormatter={(value) => `Day ${value}`}
+                  formatter={(value, name) => [
+                    value === null ? 'No data' : `${value} drinks (total)`,
+                    name === 'january' ? 'January 2026' : 'February 2026'
+                  ]}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="january" 
+                  stroke="#9CA3AF" 
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={false}
+                  connectNulls={false}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="february" 
+                  stroke="#000000" 
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={false}
+                  connectNulls={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Chart Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Cumulative Drinking Comparison
-            </CardTitle>
-            <CardDescription>
-              Cumulative drink count comparison between January 2026 (complete) and February 2026 (in progress)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-96">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={combinedData}
-                  margin={{
-                    top: 5,
-                    right: 30,
-                    left: 20,
-                    bottom: 5,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="day" 
-                    stroke="hsl(var(--muted-foreground))"
-                    tick={{ fontSize: 12 }}
-                  />
-                  <YAxis 
-                    stroke="hsl(var(--muted-foreground))"
-                    tick={{ fontSize: 12 }}
-                  />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '6px',
-                      color: 'hsl(var(--card-foreground))'
-                    }}
-                    labelFormatter={(value) => `Day ${value}`}
-                    formatter={(value, name) => [
-                      value === null ? 'No data' : `${value} drinks (total)`,
-                      name === 'january' ? 'January 2026' : 'February 2026'
-                    ]}
-                  />
-                  <Legend 
-                    wrapperStyle={{ color: 'hsl(var(--foreground))' }}
-                    formatter={(value) => (
-                      <span style={{ color: 'hsl(var(--foreground))' }}>
-                        {value === 'january' ? 'January 2026' : 'February 2026'}
-                      </span>
-                    )}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="january" 
-                    stroke="#3B82F6" 
-                    strokeWidth={2}
-                    dot={{ r: 4, fill: '#3B82F6' }}
-                    activeDot={{ r: 6, fill: '#3B82F6' }}
-                    connectNulls={false}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="february" 
-                    stroke="#14B8A6" 
-                    strokeWidth={2}
-                    dot={{ r: 4, fill: '#14B8A6' }}
-                    activeDot={{ r: 6, fill: '#14B8A6' }}
-                    connectNulls={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* January Stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                January 2026 Summary
-                <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20">
-                  Complete
-                </Badge>
-              </CardTitle>
-              <CardDescription>31 days of tracking data</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 rounded-lg bg-muted/50">
-                  <div className="text-2xl font-bold text-blue-400">{januaryStats.total}</div>
-                  <div className="text-sm text-muted-foreground">Total Drinks</div>
-                </div>
-                <div className="text-center p-4 rounded-lg bg-muted/50">
-                  <div className="text-2xl font-bold text-blue-400">{januaryStats.average}</div>
-                  <div className="text-sm text-muted-foreground">Avg per Day</div>
-                </div>
-                <div className="text-center p-4 rounded-lg bg-muted/50">
-                  <div className="text-2xl font-bold text-blue-400">{januaryStats.max}</div>
-                  <div className="text-sm text-muted-foreground">Max in Day</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* February Stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                February 2026 Summary
-                <Badge variant="outline" className="bg-teal-500/10 text-teal-400 border-teal-500/20">
-                  In Progress
-                </Badge>
-              </CardTitle>
-              <CardDescription>9 days of tracking data so far</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 rounded-lg bg-muted/50">
-                  <div className="text-2xl font-bold text-teal-400">{februaryStats.total}</div>
-                  <div className="text-sm text-muted-foreground">Total Drinks</div>
-                </div>
-                <div className="text-center p-4 rounded-lg bg-muted/50">
-                  <div className="text-2xl font-bold text-teal-400">{februaryStats.average}</div>
-                  <div className="text-sm text-muted-foreground">Avg per Day</div>
-                </div>
-                <div className="text-center p-4 rounded-lg bg-muted/50">
-                  <div className="text-2xl font-bold text-teal-400">{februaryStats.max}</div>
-                  <div className="text-sm text-muted-foreground">Max in Day</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center text-muted-foreground text-sm">
-          <p>Track your daily hydration and drinking habits with Molt</p>
-        </div>
+        {/* Heatmap */}
+        <HeatmapGrid />
       </div>
     </div>
   )
