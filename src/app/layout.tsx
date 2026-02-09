@@ -5,8 +5,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Molt - Drinking Tracker',
-  description: 'Track your daily hydration and drinking habits',
+  title: 'Drinking Tracker',
+  description: 'Track your drinking habits with visual charts and heatmaps',
 }
 
 export default function RootLayout({
