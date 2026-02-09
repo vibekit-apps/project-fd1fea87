@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Molt - Drinking Tracker',
-  description: 'Track and visualize your daily drinking habits',
+  description: 'Track your daily hydration and drinking habits',
 }
 
 export default function RootLayout({
