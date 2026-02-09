@@ -1,96 +1,61 @@
 'use client'
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { useState, useEffect } from 'react'
 
 // Mock data for January 2026 (complete month)
 const januaryData = [
-  { day: 1, january: 4 },
-  { day: 2, january: 3 },
-  { day: 3, january: 6 },
-  { day: 4, january: 2 },
-  { day: 5, january: 8 },
-  { day: 6, january: 5 },
-  { day: 7, january: 7 },
-  { day: 8, january: 3 },
-  { day: 9, january: 4 },
-  { day: 10, january: 9 },
-  { day: 11, january: 6 },
-  { day: 12, january: 2 },
-  { day: 13, january: 8 },
-  { day: 14, january: 5 },
-  { day: 15, january: 7 },
-  { day: 16, january: 4 },
-  { day: 17, january: 10 },
-  { day: 18, january: 6 },
-  { day: 19, january: 3 },
-  { day: 20, january: 8 },
-  { day: 21, january: 5 },
-  { day: 22, january: 7 },
-  { day: 23, january: 4 },
-  { day: 24, january: 12 },
-  { day: 25, january: 9 },
-  { day: 26, january: 6 },
-  { day: 27, january: 8 },
-  { day: 28, january: 5 },
-  { day: 29, january: 7 },
-  { day: 30, january: 4 },
-  { day: 31, january: 11 },
+  { day: 1, drinks: 4 },
+  { day: 2, drinks: 3 },
+  { day: 3, drinks: 6 },
+  { day: 4, drinks: 2 },
+  { day: 5, drinks: 8 },
+  { day: 6, drinks: 5 },
+  { day: 7, drinks: 7 },
+  { day: 8, drinks: 3 },
+  { day: 9, drinks: 4 },
+  { day: 10, drinks: 9 },
+  { day: 11, drinks: 6 },
+  { day: 12, drinks: 2 },
+  { day: 13, drinks: 8 },
+  { day: 14, drinks: 5 },
+  { day: 15, drinks: 7 },
+  { day: 16, drinks: 4 },
+  { day: 17, drinks: 10 },
+  { day: 18, drinks: 6 },
+  { day: 19, drinks: 3 },
+  { day: 20, drinks: 8 },
+  { day: 21, drinks: 5 },
+  { day: 22, drinks: 7 },
+  { day: 23, drinks: 4 },
+  { day: 24, drinks: 12 },
+  { day: 25, drinks: 9 },
+  { day: 26, drinks: 6 },
+  { day: 27, drinks: 8 },
+  { day: 28, drinks: 5 },
+  { day: 29, drinks: 7 },
+  { day: 30, drinks: 4 },
+  { day: 31, drinks: 11 },
 ]
 
 // Mock data for February 2026 (partial month up to day 9)
 const februaryData = [
-  { day: 1, february: 5 },
-  { day: 2, february: 3 },
-  { day: 3, february: 7 },
-  { day: 4, february: 4 },
-  { day: 5, february: 6 },
-  { day: 6, february: 8 },
-  { day: 7, february: 2 },
-  { day: 8, february: 9 },
-  { day: 9, february: 5 },
+  { day: 1, drinks: 5 },
+  { day: 2, drinks: 3 },
+  { day: 3, drinks: 7 },
+  { day: 4, drinks: 4 },
+  { day: 5, drinks: 6 },
+  { day: 6, drinks: 8 },
+  { day: 7, drinks: 2 },
+  { day: 8, drinks: 9 },
+  { day: 9, drinks: 5 },
 ]
-
-// Generate full year data for heatmap
-const generateYearData = () => {
-  const yearData = []
-  const months = [
-    { name: 'Jan', days: 31, data: januaryData },
-    { name: 'Feb', days: 28, data: februaryData },
-    { name: 'Mar', days: 31, data: [] },
-    { name: 'Apr', days: 30, data: [] },
-    { name: 'May', days: 31, data: [] },
-    { name: 'Jun', days: 30, data: [] },
-    { name: 'Jul', days: 31, data: [] },
-    { name: 'Aug', days: 31, data: [] },
-    { name: 'Sep', days: 30, data: [] },
-    { name: 'Oct', days: 31, data: [] },
-    { name: 'Nov', days: 30, data: [] },
-    { name: 'Dec', days: 31, data: [] }
-  ]
-
-  months.forEach((month, monthIndex) => {
-    for (let day = 1; day <= month.days; day++) {
-      const dataPoint = month.data.find(d => d.day === day)
-      const value = dataPoint ? (monthIndex === 0 ? dataPoint.january : dataPoint.february) : 0
-      yearData.push({
-        date: `2026-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-        value,
-        month: monthIndex,
-        day
-      })
-    }
-  })
-
-  return yearData
-}
 
 // Calculate cumulative sums
 const januaryCumulative = januaryData.reduce((acc, curr, index) => {
   const previousSum = index > 0 ? acc[index - 1].january : 0
   acc.push({
     day: curr.day,
-    january: previousSum + curr.january
+    january: previousSum + curr.drinks
   })
   return acc
 }, [] as Array<{ day: number; january: number }>)
@@ -99,7 +64,7 @@ const februaryCumulative = februaryData.reduce((acc, curr, index) => {
   const previousSum = index > 0 ? acc[index - 1].february : 0
   acc.push({
     day: curr.day,
-    february: previousSum + curr.february
+    february: previousSum + curr.drinks
   })
   return acc
 }, [] as Array<{ day: number; february: number }>)
@@ -117,6 +82,43 @@ const combinedData = Array.from({ length: 31 }, (_, i) => {
   }
 })
 
+// Generate full year data for heatmap
+const generateYearData = () => {
+  const yearData = []
+  const months = [
+    { name: 'Jan', days: 31, data: januaryData },
+    { name: 'Feb', days: 28, data: februaryData },
+  ]
+
+  months.forEach((month, monthIndex) => {
+    for (let day = 1; day <= month.days; day++) {
+      const dataPoint = month.data.find(d => d.day === day)
+      const value = dataPoint ? dataPoint.drinks : 0
+      yearData.push({
+        date: `2026-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+        value,
+        month: monthIndex,
+        day
+      })
+    }
+  })
+
+  // Add remaining months with 0 values
+  for (let monthIndex = 2; monthIndex < 12; monthIndex++) {
+    const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][monthIndex]
+    for (let day = 1; day <= daysInMonth; day++) {
+      yearData.push({
+        date: `2026-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+        value: 0,
+        month: monthIndex,
+        day
+      })
+    }
+  }
+
+  return yearData
+}
+
 const HeatmapGrid = () => {
   const yearData = generateYearData()
   const maxValue = Math.max(...yearData.map(d => d.value))
@@ -131,7 +133,6 @@ const HeatmapGrid = () => {
   }
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
   // Create a grid starting from Sunday of the first week that contains Jan 1
   const firstDate = new Date('2026-01-01')
@@ -161,7 +162,7 @@ const HeatmapGrid = () => {
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto mt-12">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900">2026 Drinking Activity</h3>
         <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -216,20 +217,17 @@ const HeatmapGrid = () => {
 
 export default function DrinkingTracker() {
   return (
-    <div className="min-h-screen bg-white p-8">
-      <div className="max-w-6xl mx-auto space-y-12">
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">
             Drinking Tracker
           </h1>
-          <p className="text-gray-600">
-            January vs February 2026
-          </p>
         </div>
 
         {/* Chart */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="bg-white rounded-lg border p-6 mb-8">
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
